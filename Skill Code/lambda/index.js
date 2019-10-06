@@ -8,7 +8,12 @@ const LaunchRequestHandler = {
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'LaunchRequest';
     },
     handle(handlerInput) {
-        const speakOutput = 'Welcome to Wild Guess, the game where zookeepers need our help. Last night some Rhinos got out of the cage and ran wild. They smashed the office and now all the animal files are all messed up. Your job, match the animals back to their files. Are you up to the task?';
+        PickedAnimalIndex = Math.floor(Math.random() * Data.length);
+        PickedAnimal = Data[PickedAnimalIndex].name;
+
+        facts = Data[PickedAnimalIndex].facts;
+
+        const speakOutput = '<amazon:effect name="whispered">Welcome to Wild Guess</amazon:effect>, the game where zookeepers need our help. Last night some Rhinos got out of the cage and ran wild. They smashed the office and now all the animal files are all messed up. Your job, match the animals back to their files. Are you up to the task?';
         const repromptOutput = "Are you up to the task?";
         return handlerInput.responseBuilder
             .speak(speakOutput)
@@ -23,7 +28,7 @@ const StartGameIntentHandler = {
             && Alexa.getIntentName(handlerInput.requestEnvelope) === 'StartGameIntent';
     },
     handle(handlerInput) {
-        const speakOutput = facts.pop() + ". What is your guess or next clue? StartGameIntent";
+        const speakOutput = facts.pop() + ". What is your guess or next clue?";
         const repromptOutput = "i did not hear you";
         return handlerInput.responseBuilder
             .speak(speakOutput)
@@ -34,12 +39,72 @@ const StartGameIntentHandler = {
 
 const NextFactIntentHandler = {
     canHandle(handlerInput) {
+        // console.log("NextFactIntentHandler");
         return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
             && Alexa.getIntentName(handlerInput.requestEnvelope) === 'NextFactIntent';
     },
     handle(handlerInput) {
-        const speakOutput = facts.pop() + ". What is your guess or next clue? NextFactIntent";
+        if (facts.length === 1) {
+        const speakOutput = "Out of clue. You lost. The animal is a " + PickedAnimal + ". Did you know that it " + facts.pop() + ". See you next time";
         const repromptOutput = "sorry";
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt(repromptOutput)
+            .withShouldEndSession(true)
+            .getResponse();
+        } else {
+        const speakOutput = facts.pop() + ". What is your guess or next clue?";
+        const repromptOutput = "sorry";
+        return handlerInput.responseBuilder
+            .speak(speakOutput)
+            .reprompt(repromptOutput)
+            .getResponse();
+        }
+    }
+};
+
+const GuessCaptureIntentHandler = {
+    canHandle(handlerInput) {
+
+        const guessedAnimal = handlerInput.requestEnvelope.request.intent.slots.animal.value;
+        // const guessedAnimal = getSlotValue(handlerInput.requestEnvelope, 'animal');
+
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'GuessCaptureIntent'
+            && guessedAnimal !== null;
+    },
+    handle(handlerInput) {
+        const guessedAnimal = handlerInput.requestEnvelope.request.intent.slots.animal.value;
+        // const guessedAnimal = getSlotValue(handlerInput.requestEnvelope, 'animal');
+        
+        if (guessedAnimal === PickedAnimal.toLowerCase()) {
+            const speakOutput = "Congratulations! You guessed it correctly";
+            const repromptOutput = "Do you want next clue?";
+            return handlerInput.responseBuilder
+                .speak(speakOutput)
+                .reprompt(repromptOutput)
+                .withShouldEndSession(true)
+                .getResponse();
+        } else {
+            const speakOutput = "Sorry, wrong guess. You can ask me the next clue";
+            const repromptOutput = "Do you want next clue?";
+            return handlerInput.responseBuilder
+                .speak(speakOutput)
+                .reprompt(repromptOutput)
+                .getResponse();
+        }
+        
+    }
+};
+
+const CrapCaptureIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'CrapCaptureIntent';
+    },
+    handle(handlerInput) {
+        const speakOutput = "I do not understand that, can you speak something else?";
+        const repromptOutput = "sorry i cannot seem to understand what you are saying";
         return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt(repromptOutput)
@@ -178,10 +243,10 @@ const Data = [{
     }
 ];
 
-let PickedAnimalIndex = Math.floor(Math.random() * Data.length);
-let PickedAnimal = Data[PickedAnimalIndex].name;
+let PickedAnimalIndex;
+let PickedAnimal;
 
-let facts = Data[PickedAnimalIndex].facts;
+let facts;
 
 // The SkillBuilder acts as the entry point for your skill, routing all request and response
 // payloads to the handlers above. Make sure any new handlers or interceptors you've
@@ -191,6 +256,8 @@ exports.handler = Alexa.SkillBuilders.custom()
         LaunchRequestHandler,
         StartGameIntentHandler,
         NextFactIntentHandler,
+        GuessCaptureIntentHandler,
+        CrapCaptureIntentHandler,
         HelpIntentHandler,
         CancelAndStopIntentHandler,
         SessionEndedRequestHandler,
@@ -200,5 +267,3 @@ exports.handler = Alexa.SkillBuilders.custom()
         ErrorHandler,
     )
     .lambda();
-
-
