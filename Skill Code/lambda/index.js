@@ -12,12 +12,30 @@ const LaunchRequestHandler = {
         PickedAnimal = Data[PickedAnimalIndex].name;
 
         facts = Data[PickedAnimalIndex].facts;
+        const introToProceed = '<audio src="https://alexa-skills-hackathon-wildlife.s3-ap-southeast-2.amazonaws.com/raw/introsound-proceed.mp3"/>';
 
-        const speakOutput = '<amazon:effect name="whispered">Welcome to Wild Guess</amazon:effect>, the game where zookeepers need our help. Last night some Rhinos got out of the cage and ran wild. They smashed the office and now all the animal files are all messed up. Your job, match the animals back to their files. Are you up to the task?';
+        const speakOutput = '<audio src="soundbank://soundlibrary/air/fire_extinguisher/fire_extinguisher_01"/>';
         const repromptOutput = "Are you up to the task?";
+        
+        return handlerInput.responseBuilder
+            .speak(introToProceed)
+            .reprompt(repromptOutput)
+            .getResponse();
+    }
+};
+
+const ChickenIntentHandler = {
+    canHandle(handlerInput) {
+        return Alexa.getRequestType(handlerInput.requestEnvelope) === 'IntentRequest'
+            && Alexa.getIntentName(handlerInput.requestEnvelope) === 'ChickenIntent';
+    },
+    handle(handlerInput) {
+        const speakOutput = '<audio src="https://alexa-skills-hackathon-wildlife.s3-ap-southeast-2.amazonaws.com/raw/exit.mp3"/>';
+        const repromptOutput = 'Yeah someone is a chicken';
         return handlerInput.responseBuilder
             .speak(speakOutput)
             .reprompt(repromptOutput)
+            .withShouldEndSession(true)
             .getResponse();
     }
 };
@@ -28,7 +46,7 @@ const StartGameIntentHandler = {
             && Alexa.getIntentName(handlerInput.requestEnvelope) === 'StartGameIntent';
     },
     handle(handlerInput) {
-        const speakOutput = facts.pop() + ". What is your guess or next clue?";
+        const speakOutput = '<audio src="https://alexa-skills-hackathon-wildlife.s3-ap-southeast-2.amazonaws.com/raw/gamestart.mp3"/>' + switchVoice(facts.pop()) + switchVoice(". What is your guess or next clue?");
         const repromptOutput = "i did not hear you";
         return handlerInput.responseBuilder
             .speak(speakOutput)
@@ -45,7 +63,7 @@ const NextFactIntentHandler = {
     },
     handle(handlerInput) {
         if (facts.length === 1) {
-        const speakOutput = "Out of clue. You lost. The animal is a " + PickedAnimal + ". Did you know that it " + facts.pop() + ". See you next time";
+        const speakOutput = '<audio src="https://alexa-skills-hackathon-wildlife.s3-ap-southeast-2.amazonaws.com/raw/nofacts.mp3"/>' + switchVoice("You lost. The animal is a ") + switchVoice(PickedAnimal) + switchVoice(". Did you know that it ") + switchVoice(facts.pop()) + switchVoice(". See you next time");
         const repromptOutput = "sorry";
         return handlerInput.responseBuilder
             .speak(speakOutput)
@@ -53,7 +71,7 @@ const NextFactIntentHandler = {
             .withShouldEndSession(true)
             .getResponse();
         } else {
-        const speakOutput = facts.pop() + ". What is your guess or next clue?";
+        const speakOutput = '<audio src="https://alexa-skills-hackathon-wildlife.s3-ap-southeast-2.amazonaws.com/raw/readnextfact.mp3"/>' + switchVoice(facts.pop()) + switchVoice(". What is your guess or next clue?");
         const repromptOutput = "sorry";
         return handlerInput.responseBuilder
             .speak(speakOutput)
@@ -78,7 +96,7 @@ const GuessCaptureIntentHandler = {
         // const guessedAnimal = getSlotValue(handlerInput.requestEnvelope, 'animal');
         
         if (guessedAnimal === PickedAnimal.toLowerCase()) {
-            const speakOutput = "Congratulations! You guessed it correctly";
+            const speakOutput = '<audio src="https://alexa-skills-hackathon-wildlife.s3-ap-southeast-2.amazonaws.com/raw/correctguess.mp3"/>' + switchVoice("Congratulations! You guessed it correctly") + '<audio src="https://alexa-skills-hackathon-wildlife.s3-ap-southeast-2.amazonaws.com/raw/thanks.mp3"/>';
             const repromptOutput = "Do you want next clue?";
             return handlerInput.responseBuilder
                 .speak(speakOutput)
@@ -86,7 +104,7 @@ const GuessCaptureIntentHandler = {
                 .withShouldEndSession(true)
                 .getResponse();
         } else {
-            const speakOutput = "Sorry, wrong guess. You can ask me the next clue";
+            const speakOutput = '<audio src="https://alexa-skills-hackathon-wildlife.s3-ap-southeast-2.amazonaws.com/raw/wrongguess.mp3"/>' + switchVoice("Sorry, wrong guess. You can ask me the next clue");
             const repromptOutput = "Do you want next clue?";
             return handlerInput.responseBuilder
                 .speak(speakOutput)
@@ -215,7 +233,7 @@ const Data = [{
             "I eat fifty tonnes of food a year",
             "I am a thick-skinned animal, also called pachyderm",
             "It takes twenty-two months from conception to birth",
-            "I live is Africa and Asia",
+            "I live in Africa and Asia",
             "I have a long nose"
         ]
     },
@@ -237,7 +255,7 @@ const Data = [{
             "I have poor eyesight but I have an excellent sense of smell",
             "I eat caterpillars, beetles, earthworms, and slugs",
             "I am well-known in blue color",
-            "I gotta go fast ring sound",
+            "I gotta go fast",
             "A group of me is called an array"
         ]
     }
@@ -248,12 +266,19 @@ let PickedAnimal;
 
 let facts;
 
+function switchVoice(text) {
+  if (text){
+    return "<voice name='Brian'>" + text + "</voice>"
+  }
+}
+
 // The SkillBuilder acts as the entry point for your skill, routing all request and response
 // payloads to the handlers above. Make sure any new handlers or interceptors you've
 // defined are included below. The order matters - they're processed top to bottom.
 exports.handler = Alexa.SkillBuilders.custom()
     .addRequestHandlers(
         LaunchRequestHandler,
+        ChickenIntentHandler,
         StartGameIntentHandler,
         NextFactIntentHandler,
         GuessCaptureIntentHandler,
